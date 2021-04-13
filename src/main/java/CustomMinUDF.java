@@ -12,15 +12,30 @@ import java.util.List;
 
 public class CustomMinUDF extends GenericUDF {
 
+    ListObjectInspector listOI;
 
-    @Override
-    public ObjectInspector initialize(ObjectInspector[] objectInspectors) throws UDFArgumentException {
-        return null;
+    public ObjectInspector initialize(ObjectInspector[] arguments) throws UDFArgumentException {
+        if (arguments.length != 1) {
+            throw new UDFArgumentLengthException("Only 1 argument: List<Int>");
+        }
+        ObjectInspector a = arguments[0];
+        if (!(a instanceof ListObjectInspector)) {
+            throw new UDFArgumentException("first argument must be a list");
+        }
+        this.listOI = (ListObjectInspector) a;
+        if (!(listOI.getListElementObjectInspector() instanceof IntObjectInspector)) {
+            throw new UDFArgumentException("first argument must be a list of int");
+        }
+        return listOI.getListElementObjectInspector();
     }
 
-    @Override
-    public Object evaluate(DeferredObject[] deferredObjects) throws HiveException {
-        return null;
+    public Object evaluate(DeferredObject[] arguments) throws HiveException {
+
+        List<IntWritable> list = (List<IntWritable>) this.listOI.getList(arguments[0].get());
+        if (list == null) {
+            return new IntWritable(0);
+        }
+        return Collections.min(list);
     }
 
     @Override
